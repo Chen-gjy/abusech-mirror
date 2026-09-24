@@ -1,0 +1,40 @@
+name: abusech-mirror
+on:
+  schedule:
+    - cron: '23 0,12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch MalwareBazaar online CSV and build wazuh CDB list
+        env:
+          ABUSECH_KEY: ${{ secrets.ABUSECH_KEY }}
+        run: |
+          set -e
+          curl -sf -m 900 -H "Auth-Key: $ABUSECH_KEY" "https://bazaar.abuse.ch/export/csv/online/" -o bz.csv
+          test $(wc -l < bz.csv) -gt 5000
+          python3 - <<'PYEOF2'
+          import csv
+          rows = set()
+          with open("bz.csv", errors="ignore") as f:
+              for row in csv.reader(f):
+                  if len(row) > 8 and len(row[1]) == 64:
+                      fam = (row[9] or "malware").replace(":", "_").replace(" ", "_")[:40]
+                      rows.add(f"{row[1].lower()}:{fam}")
+          open("malware-hashes.txt", "w").write("\n".join(sorted(rows)) + "\n")
+          print("hashes:", len(rows))
+          PYEOF2
+      - name: Commit and push
+        run: |
+          git config user.name "abusech-mirror-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add malware-hashes.txt
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -m "mirror: $(date -u +%Y-%m-%dT%H:%MZ) $(wc -l < malware-hashes.txt) hashes"
+          git push
