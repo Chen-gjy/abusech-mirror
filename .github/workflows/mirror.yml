@@ -17,7 +17,9 @@ jobs:
           ABUSECH_KEY: ${{ secrets.ABUSECH_KEY }}
         run: |
           set -e
-          curl -sf -m 900 -H "Auth-Key: $ABUSECH_KEY" "https://bazaar.abuse.ch/export/csv/online/" -o bz.csv
+          HTTP=$(curl -s -m 900 -H "Auth-Key: $ABUSECH_KEY" -o bz.csv -w "%{http_code}" "https://bazaar.abuse.ch/export/csv/online/")
+          echo "bazaar HTTP=$HTTP size=$(wc -c < bz.csv)"
+          test "$HTTP" = 200
           test $(wc -l < bz.csv) -gt 5000
           python3 - <<'PYEOF2'
           import csv
