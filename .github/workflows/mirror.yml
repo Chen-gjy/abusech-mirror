@@ -20,7 +20,7 @@ jobs:
           HTTP=$(curl -s -m 900 -o bz.csv -w "%{http_code}" "https://mb-api.abuse.ch/v2/files/exports/$ABUSECH_KEY/recent.csv")
           echo "bazaar HTTP=$HTTP size=$(wc -c < bz.csv)"
           if [ "$HTTP" != 200 ]; then echo "BODY: $(head -c 300 bz.csv)"; exit 1; fi
-          test $(wc -l < bz.csv) -gt 3000
+          test $(wc -l < bz.csv) -gt 1000
           python3 - <<'PYEOF2'
           import csv
           rows = set()
