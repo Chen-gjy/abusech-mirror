@@ -12,22 +12,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Fetch MalwareBazaar online CSV and build wazuh CDB list
+      - name: Fetch MalwareBazaar export and build wazuh CDB list
         env:
           ABUSECH_KEY: ${{ secrets.ABUSECH_KEY }}
         run: |
           set -e
-          HTTP=$(curl -s -m 900 -H "Auth-Key: $ABUSECH_KEY" -o bz.csv -w "%{http_code}" "https://bazaar.abuse.ch/export/csv/online/")
+          HTTP=$(curl -s -m 900 -o bz.csv -w "%{http_code}" "https://mb-api.abuse.ch/v2/files/exports/$ABUSECH_KEY/recent.csv")
           echo "bazaar HTTP=$HTTP size=$(wc -c < bz.csv)"
           test "$HTTP" = 200
-          test $(wc -l < bz.csv) -gt 5000
+          test $(wc -l < bz.csv) -gt 3000
           python3 - <<'PYEOF2'
           import csv
           rows = set()
           with open("bz.csv", errors="ignore") as f:
               for row in csv.reader(f):
-                  if len(row) > 8 and len(row[1]) == 64:
-                      fam = (row[9] or "malware").replace(":", "_").replace(" ", "_")[:40]
+                  if len(row) > 1 and len(row[1]) == 64:
+                      fam = (row[9] if len(row) > 9 and row[9] else "malware").replace(":", "_").replace(" ", "_")[:40]
                       rows.add(f"{row[1].lower()}:{fam}")
           open("malware-hashes.txt", "w").write("\n".join(sorted(rows)) + "\n")
           print("hashes:", len(rows))
