@@ -25,7 +25,7 @@ jobs:
           import csv
           rows = set()
           with open("bz.csv", errors="ignore") as f:
-              for row in csv.reader(f):
+              for row in csv.reader(f, skipinitialspace=True):
                   if len(row) > 1 and len(row[1]) == 64:
                       fam = (row[9] if len(row) > 9 and row[9] else "malware").replace(":", "_").replace(" ", "_")[:40]
                       rows.add(f"{row[1].lower()}:{fam}")
