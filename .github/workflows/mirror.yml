@@ -19,7 +19,7 @@ jobs:
           set -e
           HTTP=$(curl -s -m 900 -o bz.csv -w "%{http_code}" "https://mb-api.abuse.ch/v2/files/exports/$ABUSECH_KEY/recent.csv")
           echo "bazaar HTTP=$HTTP size=$(wc -c < bz.csv)"
-          test "$HTTP" = 200
+          if [ "$HTTP" != 200 ]; then echo "BODY: $(head -c 300 bz.csv)"; exit 1; fi
           test $(wc -l < bz.csv) -gt 3000
           python3 - <<'PYEOF2'
           import csv
