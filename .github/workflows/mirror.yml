@@ -20,7 +20,8 @@ jobs:
           HTTP=$(curl -s -m 900 -o bz.csv -w "%{http_code}" "https://mb-api.abuse.ch/v2/files/exports/$ABUSECH_KEY/recent.csv")
           echo "bazaar HTTP=$HTTP size=$(wc -c < bz.csv)"
           if [ "$HTTP" != 200 ]; then echo "BODY: $(head -c 300 bz.csv)"; exit 1; fi
-          test $(wc -l < bz.csv) -gt 1000
+          test $(wc -l < bz.csv) -gt 100   # 防退化下限：recent 滚动窗近期量缩至 ~1k
+          # （2026-10-12 跌破 1000 致连续误杀失败邮件；100 仍远高于错误页/空响应的 ~0 行）
           python3 - <<'PYEOF2'
           import csv
           rows = set()
